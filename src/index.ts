@@ -1,4 +1,4 @@
-import fs, { Dirent } from 'fs';
+import fs from 'fs';
 import path from 'path';
 import { FsError, errors } from './errors.js';
 import { FolderNode, createFolderNode, FileNode, FsNode, createFileNode, createFsNode } from './fsnodes.js';
