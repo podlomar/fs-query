@@ -1,0 +1,35 @@
+{
+  "name": "fs-query",
+  "version": "1.0.0-alpha.1",
+  "description": "A Node.js utility to easily query the filesystem",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "test": "mocha",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/podlomar/fs-query.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/podlomar/fs-query/issues"
+  },
+  "homepage": "https://github.com/podlomar/fs-query#readme",
+  "devDependencies": {
+    "@tsconfig/node18": "^2.0.1",
+    "@types/node": "^20.2.1",
+    "chai": "^4.3.7",
+    "mocha": "^10.2.0",
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "monadix": "^0.2.1"
+  }
+}
