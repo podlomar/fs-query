@@ -9,7 +9,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsc",
     "dev": "tsc -w",
     "test": "mocha",
     "prepublishOnly": "npm run build"
@@ -30,6 +31,7 @@
     "@types/node": "^20.2.1",
     "chai": "^4.3.7",
     "mocha": "^10.2.0",
+    "rimraf": "^5.0.1",
     "typescript": "^5.0.4"
   },
   "dependencies": {
