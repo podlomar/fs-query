@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { FsError, errors } from './errors.js';
-import { FolderNode, createFolderNode, FileNode, FsNode, createFileNode, createFsNode } from './fsnodes.js';
-import { Result, Fail, success, fail, Success } from 'monadix/result';
+import { FolderNode, createFolderNode, FileNode, FsNode, createFsNode } from './fsnodes.js';
+import { Result, success, fail, Success } from 'monadix/result';
 
 export { FsNode, FolderNode, FileNode };
 
