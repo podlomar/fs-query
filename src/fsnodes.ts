@@ -27,6 +27,8 @@ export interface FolderNode extends BaseFSNode {
 
 export type FsNode = FileNode | FolderNode;
 
+export type FsNodeType = FsNode['type'];
+
 export const createFsNode = (fsPath: string): Result<FsNode, FsError> => {
   const resolvedPath = path.resolve(fsPath);
   const stats = fs.statSync(resolvedPath, { throwIfNoEntry: false });

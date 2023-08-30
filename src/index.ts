@@ -1,60 +1,50 @@
-import fs from 'fs';
 import path from 'path';
 import { FsError, errors } from './errors.js';
-import { FolderNode, createFolderNode, FileNode, FsNode, createFsNode } from './fsnodes.js';
+import { FolderNode, createFolderNode, FileNode, FsNode, createFsNode, FsNodeType } from './fsnodes.js';
 import { Result, success, fail, Success } from 'monadix/result';
 
 export { FsNode, FolderNode, FileNode };
 
 export type QueryResult<T> = Result<T, FsError>;
 
-const findOneByNames = (
-  folder: FolderNode, names: string[],
-): FsNode | null => {
-  if (names.length === 0) {
-    return null;
+const findOneByPath = <T extends FsNode>(
+  folder: FolderNode,
+  nodePath: string,
+  nodeType: 'node' | FsNodeType,
+  extensions: string[] = [''],
+): T | null => {
+  for (const ext of extensions) {
+    const node = createFsNode(path.resolve(folder.path, `${nodePath}${ext}`));
+    if (node.isSuccess() && (nodeType === 'node' || node.get().type === nodeType)) {
+      return node.get() as T;
+    }
   }
+  
+  return null;
+}
 
-  const file = names.length === 1
-    ? path.join(folder.path, names[0])
-    : fs.readdirSync(folder.path).find((dirent) => names.includes(dirent));
-
-  if (file === undefined) {
-    return null;
+const findAllByPaths = <T extends FsNode>(
+  folder: FolderNode,
+  paths: string[],
+  nodeType: 'node' | FsNodeType,
+  extensions: string[] = [''],
+): T[] => {
+  const nodes: T[] = [];
+  for (const p of paths) {
+    const node = findOneByPath<T>(folder, p, nodeType, extensions);
+    if (node !== null) {
+      nodes.push(node);
+    }
   }
-
-  return createFsNode(file).match({
-    success: (node): FsNode => node,
-    fail: (): null => null,
-  });
-};
-
-const findAllByNames = (
-  folder: FolderNode, names: string[]
-): FsNode[] => {
-  const dirents = fs.readdirSync(folder.path);
-  return names
-    .reduce((acc, name) => {
-      const file = dirents.find((dirent) => dirent === name);
-      return file === undefined ? acc : [...acc, file];
-    }, [] as string[])
-  .map((dirent) => createFsNode(path.join(folder.path, dirent)))
-  .filter((value): value is Success<FsNode> => value.isSuccess())
-  .map((value) => value.get());
-};
-
-const findAllByPaths = (
-  folder: FolderNode, paths: string[]
-): FsNode[] => paths
-  .map((p) => createFsNode(path.resolve(folder.path, p)))
-  .filter((value): value is Success<FsNode> => value.isSuccess())
-  .map((value) => value.get());
+  
+  return nodes;
+}
 
 export class SingleSelect<T extends FileNode | FolderNode> {
   private readonly result: Result<FolderNode, FsError>;
-  private readonly nodeType: 'file' | 'folder';
+  private readonly nodeType: FsNodeType;
 
-  private constructor(result: Result<FolderNode, FsError>, nodeType: 'file' | 'folder') {
+  private constructor(result: Result<FolderNode, FsError>, nodeType: FsNodeType) {
     this.result = result;
     this.nodeType = nodeType;
   }
@@ -67,23 +57,17 @@ export class SingleSelect<T extends FileNode | FolderNode> {
     return new SingleSelect(result, 'folder');
   }
 
-  public byName(name: string, ...extensions: string[]): Result<T, FsError> {
-    const fileNames = extensions.length > 0
-      ? extensions.map((ext) => `${name}.${ext}`)
-      : [name];
-    
+  public byPath(nodePath: string, ...extensions: string[]): Result<T, FsError> {
     return this.result.chain(
       (folder): Result<T, FsError> => {
-        const node = findOneByNames(folder, fileNames);
+        const node = findOneByPath<T>(
+          folder, nodePath, this.nodeType, extensions.length > 0 ? extensions : ['']
+        );
         if (node === null) {
           return fail(errors.notFound(folder.path));
         }
 
-        if (node.type !== this.nodeType) {
-          return fail(errors.notFound(folder.path));
-        }
-
-        return success(node as T);
+        return success(node);
       },
     );
   }
@@ -109,9 +93,9 @@ export class SingleSelect<T extends FileNode | FolderNode> {
 
 export class MultiSelect<T extends FsNode> {
   private readonly result: Result<FolderNode, FsError>;
-  private readonly nodeType: 'node' | 'folder' | 'file';
+  private readonly nodeType: 'node' | FsNodeType;
 
-  private constructor(result: Result<FolderNode, FsError>, nodeType: 'node' | 'folder' | 'file') {
+  private constructor(result: Result<FolderNode, FsError>, nodeType: 'node' | FsNodeType) {
     this.result = result;
     this.nodeType = nodeType;
   }
@@ -128,40 +112,14 @@ export class MultiSelect<T extends FsNode> {
     return new MultiSelect(result, 'folder');
   }
 
-  public byName(name: string, ...extensions: string[]): Result<T[], FsError> {
-    return this.byNames([name], ...extensions);
-  }
-
-  public byNames(names: string[], ...extensions: string[]): Result<T[], FsError> {
-    const extNames = names.flatMap((name) => extensions.map((ext) => `${name}.${ext}`));
-    const fileNames = extensions.length === 0 || this.nodeType === 'node'
-      ? [...names, ...extNames]
-      : extNames;
-
-    return this.result.chain(
-      (folder): Result<T[], FsError> => success(
-        findAllByNames(folder, fileNames)
-          .filter((node): node is T => (
-            this.nodeType === 'node' || node.type === this.nodeType
-          )
-        ),
-      )
-    );
+  public byPath(name: string, ...extensions: string[]): Result<T[], FsError> {
+    return this.byPaths([name], ...extensions);
   }
 
   public byPaths(paths: string[], ...extensions: string[]): Result<T[], FsError> {
-    const extPaths = paths.flatMap((p) => extensions.map((ext) => `${p}.${ext}`));
-    const filePaths = extensions.length === 0 || this.nodeType === 'node'
-      ? [...paths, ...extPaths]
-      : extPaths;
-
     return this.result.chain(
       (folder): Result<T[], FsError> => success(
-        findAllByPaths(folder, filePaths)
-          .filter((node): node is T => (
-            this.nodeType === 'node' || node.type === this.nodeType
-          )
-        ),
+        findAllByPaths(folder, paths, this.nodeType, extensions.length > 0 ? extensions : ['']),
       )
     );
   }
