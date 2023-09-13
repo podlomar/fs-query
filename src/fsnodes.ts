@@ -23,18 +23,31 @@ export type FsNodeType = FsNode['type'];
 
 export const createFsNode = (fsPath: string): Result<FsNode, FsError> => {
   const resolvedPath = path.resolve(fsPath);
-  const stats = fs.statSync(resolvedPath);
-  if (stats === undefined) {
-    return Result.fail(errors.notFound(resolvedPath));
-  }
+  
+  try {
+    const stats = fs.statSync(resolvedPath);
+    if (stats === undefined) {
+      return Result.fail(errors.notFound(resolvedPath));
+    }
 
-  const parsedPath = path.parse(resolvedPath);
-  return Result.success({
-    type: stats.isDirectory() ? 'folder' : 'file',
-    path: resolvedPath,
-    fileName: parsedPath.name,
-    ext: parsedPath.ext,
-  });
+    const parsedPath = path.parse(resolvedPath);
+    return Result.success({
+      type: stats.isDirectory() ? 'folder' : 'file',
+      path: resolvedPath,
+      fileName: parsedPath.name,
+      ext: parsedPath.ext,
+    });
+  } catch (err: any) {
+    if (err.code === 'ENOENT') {
+      return Result.fail(errors.notFound(resolvedPath));
+    }
+
+    return Result.fail({
+      code: 'unknown',
+      message: err.message,
+      meta: err,
+    });
+  }
 }
 
 export const createFolderNode = (folderPath: string): Result<FolderNode, FsError> => (
