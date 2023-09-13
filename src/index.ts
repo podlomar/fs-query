@@ -1,7 +1,7 @@
 import path from 'path';
 import { FsError, errors } from './errors.js';
 import { FolderNode, createFolderNode, FileNode, FsNode, createFsNode, FsNodeType } from './fsnodes.js';
-import { Result, success, fail, Success } from 'monadix/result';
+import { Result } from 'monadix/result';
 
 export { FsNode, FolderNode, FileNode };
 
@@ -64,10 +64,10 @@ export class SingleSelect<T extends FileNode | FolderNode> {
           folder, nodePath, this.nodeType, extensions.length > 0 ? extensions : ['']
         );
         if (node === null) {
-          return fail(errors.notFound(folder.path));
+          return Result.fail(errors.notFound(folder.path));
         }
 
-        return success(node);
+        return Result.success(node);
       },
     );
   }
@@ -118,7 +118,7 @@ export class MultiSelect<T extends FsNode> {
 
   public byPaths(paths: string[], ...extensions: string[]): Result<T[], FsError> {
     return this.result.chain(
-      (folder): Result<T[], FsError> => success(
+      (folder): Result<T[], FsError> => Result.success(
         findAllByPaths(folder, paths, this.nodeType, extensions.length > 0 ? extensions : ['']),
       )
     );
@@ -163,7 +163,7 @@ export class FolderQuery {
   public cd(folderPath: string): FolderQuery {
     return this.result.match({
       success: (folderNode): FolderQuery => folder(path.join(folderNode.path, folderPath)),
-      fail: (error): FolderQuery => new FolderQuery(fail(error)),
+      fail: (error): FolderQuery => new FolderQuery(Result.fail(error)),
     });
   }
 
@@ -175,7 +175,7 @@ export class FolderQuery {
 export const folder = (source: string | FolderNode): FolderQuery => (
   typeof source === 'string'
     ? new FolderQuery(createFolderNode(source))
-    : new FolderQuery(success(source))
+    : new FolderQuery(Result.success(source))
 );
 
 export class FsNodeQuery {
@@ -188,9 +188,9 @@ export class FsNodeQuery {
   public get asFolder(): FolderQuery {
     return this.result.match({
       success: (node): FolderQuery => node.type === 'folder'
-        ? new FolderQuery(success(node))
-        : new FolderQuery(fail(errors.notAFolder(node.path))),
-      fail: (error): FolderQuery => new FolderQuery(fail(error)),
+        ? new FolderQuery(Result.success(node))
+        : new FolderQuery(Result.fail(errors.notAFolder(node.path))),
+      fail: (error): FolderQuery => new FolderQuery(Result.fail(error)),
     });
   }
 
@@ -203,7 +203,7 @@ export class FsNodeQuery {
       success: (node): FolderQuery => new FolderQuery(
         createFolderNode(path.dirname(node.path)),
       ),
-      fail: (error): FolderQuery => new FolderQuery(fail(error)),
+      fail: (error): FolderQuery => new FolderQuery(Result.fail(error)),
     });
   }
 }
@@ -211,5 +211,5 @@ export class FsNodeQuery {
 export const fsNode = (fspath: string | FsNode): FsNodeQuery => (
   typeof fspath === 'string'
     ? new FsNodeQuery(createFsNode(fspath))
-    : new FsNodeQuery(success(fspath))
+    : new FsNodeQuery(Result.success(fspath))
 );

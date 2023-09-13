@@ -35,6 +35,6 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "monadix": "^0.2.1"
+    "monadix": "^1.0.5"
   }
 }
