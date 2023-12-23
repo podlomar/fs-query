@@ -12,7 +12,7 @@
     "clean": "rimraf dist",
     "build": "npm run clean && tsc",
     "dev": "tsc -w",
-    "test": "mocha",
+    "test": "mocha tests/**/*.test.js",
     "prepublishOnly": "npm run build"
   },
   "repository": {
@@ -28,13 +28,16 @@
   "homepage": "https://github.com/podlomar/fs-inquire#readme",
   "devDependencies": {
     "@tsconfig/node18": "^2.0.1",
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "^10.0.6",
     "@types/node": "^20.2.1",
-    "chai": "^4.3.7",
+    "chai": "^4.3.10",
     "mocha": "^10.2.0",
+    "mock-fs": "^5.2.0",
     "rimraf": "^5.0.1",
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "monadix": "^1.0.5"
+    "monadix": "^1.0.6"
   }
 }

@@ -1,7 +1,8 @@
+import { readdirSync } from 'fs';
 import path from 'path';
 import { FsError, errors } from './errors.js';
 import { FolderNode, createFolderNode, FileNode, FsNode, createFsNode, FsNodeType } from './fsnodes.js';
-import { Result } from 'monadix/result';
+import { Result, Success } from 'monadix/result';
 
 export { FsNode, FolderNode, FileNode };
 
@@ -34,6 +35,28 @@ const findAllByPaths = <T extends FsNode>(
     const node = findOneByPath<T>(folder, p, nodeType, extensions);
     if (node !== null) {
       nodes.push(node);
+    }
+  }
+  
+  return nodes;
+}
+
+const findAll = <T extends FsNode>(
+  folder: FolderNode,
+  nodeType: 'node' | FsNodeType,
+  extensions: string[] = [],
+): T[] => {
+  const nodes: T[] = [];
+  for (const dirent of readdirSync(folder.path, { withFileTypes: true })) {
+    if (dirent.isFile() || dirent.isDirectory()) {
+      const result = createFsNode(path.resolve(folder.path, dirent.name));
+      if (
+        result.isSuccess()
+        && (nodeType === 'node' || result.get().type === nodeType)
+        && (extensions.length === 0 || extensions.includes(result.get().ext))
+      ) {
+        nodes.push(result.get() as T);
+      }
     }
   }
   
@@ -110,6 +133,14 @@ export class MultiSelect<T extends FsNode> {
 
   public static folder(result: Result<FolderNode, FsError>): MultiSelect<FolderNode> {
     return new MultiSelect(result, 'folder');
+  }
+
+  public all(...extensions: string[]): Result<T[], FsError> {
+    return this.result.chain(
+      (folder): Result<T[], FsError> => Result.success(
+        findAll<T>(folder, this.nodeType, extensions)
+      )
+    );
   }
 
   public byPath(name: string, ...extensions: string[]): Result<T[], FsError> {

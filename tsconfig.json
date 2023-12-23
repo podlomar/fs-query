@@ -3,7 +3,7 @@
   "compilerOptions": {
     "lib": ["esnext"],
     "outDir": "dist",
-    "module": "esnext",
+    "module": "node16",
     "target": "esnext",
     "moduleResolution": "node16",
     "declaration": true,
